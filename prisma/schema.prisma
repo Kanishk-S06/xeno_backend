@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id         String    @id @default(cuid())
+  name       String
+  storefront String?
+  apiKey     String?
+  apiSecret  String?
+  createdAt  DateTime  @default(now())
+
+  Users      User[]
+  Customer   Customer[]
+  Product    Product[]
+  Order      Order[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  externalId String
+  email      String?
+  name       String?
+  totalSpent Float    @default(0)
+
+  orders     Order[]
+
+  @@unique([externalId, tenantId])
+}
+
+model Product {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  externalId String
+  title      String
+  price      Float
+
+  @@unique([externalId, tenantId])
+}
+
+model Order {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  externalId String
+  customerId String?
+  amount     Float
+  createdAt  DateTime @default(now())
+  status     String
+
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  @@unique([externalId, tenantId])
+}
